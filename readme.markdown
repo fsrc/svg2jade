@@ -50,3 +50,58 @@ Shortcut to success
 Future
 ======
 I have a small client side library that acts on default css class names such as clickable, foldable, visible and so forth. Setting the correct class name on an object would implement default behavior. However that library is still not subject for public display ;-)
+
+Extras
+======
+I also have a small serverside function that will automatically create a svg-wrapper around the partial based on the size that the partial has. It looks like this. Tastes like Coffee..
+
+    svg_wrap = (id, display, partials) ->
+      total_height = 0
+      total_width = 0
+  
+      # If we only got a single partial, put that into an array.
+      partials = [partials] if partials.constructor != Array
+  
+      partials = for partial in partials
+        regex_res = /width\s*=\s*["']([\d\.]+)["']\s+height\s*=\s*["']([\d\.]+)["']/i.exec partial
+        total_width   += parseFloat(regex_res[1]) if regex_res and regex_res[1]
+        total_height  += parseFloat(regex_res[2]) if regex_res and regex_res[2]
+        partial
+
+      "<svg version='1.1' id='#{id}' 
+            xmlns='http://www.w3.org/2000/svg' 
+            xmlns:xlink='http://www.w3.org/1999/xlink' 
+            width='#{total_width}px' 
+            height='#{total_height}px' 
+            viewBox='0 0 #{total_width} #{total_height}' 
+            enable-background='0 0 #{total_width} #{total_height}'
+            xml:space='preserve'>
+            <script src='/javascripts/app.js'></script>
+        #{partials.join()}
+      </svg>"
+
+Put that somewhere inside your controller code. And push a reference to your view like so; (Still taste Coffee..)
+
+    app.get '/view/welcome', (req, res) =>
+      data = {
+        svg_wrap:svg_wrap,
+        layout:'basic-layout',
+        anyothervar:"value"
+      }
+      
+      # IMPORTANT: You will need this line to be able to render SVG
+      res.header 'Content-Type', 'text/xml; charset=utf-8'
+      # Render the view
+      res.render 'welcome-template', data
+
+**IMPORTANT: You will need this line to be able to render SVG.** Otherwise the browser wont recognize the SVG XML.
+
+    res.header 'Content-Type', 'text/xml; charset=utf-8'
+
+Now, in your jade template you would put; (This is javascript in Jade)
+
+    != svg_wrap('welcome', true, partial('svg-welcome', { }))
+
+
+Happy hacking!
+==============
