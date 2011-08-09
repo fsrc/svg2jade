@@ -1,0 +1,423 @@
+#!/usr/bin/env coffee
+
+fs        = require 'fs'
+spawn     = require('child_process').spawn
+# path      = fs.realpathSync 'svg'
+# out_path  = fs.realpathSync 'views/svg'
+out_path  = fs.realpathSync './'
+Lazy      = require("lazy")  
+INDENT    = 2
+
+files = []
+process.argv.forEach (val, index, array) ->
+  files.push val if index > 1
+
+if files.length == 0
+  console.log "No files given as input."
+  process.exit(1)
+
+# Repeat any string count times, great for generating empty strings.
+# For example indentation spaces.
+String.prototype.repeat = (count) ->
+  if (count < 1) 
+    return ''
+  
+  result  = ''
+  pattern = this.valueOf()
+  
+  while (count > 0) 
+    if (count & 1)
+      result += pattern
+    
+    count >>= 1
+    pattern += pattern
+  
+  return result
+
+# Trim any whitespace from beginning and end of string.
+String.prototype.trim = () ->
+  String(this).replace(/^\s+|\s+$/g, '')
+
+# Trim any whitespace from begining of string.
+String.prototype.ltrim = () ->
+  String(this).replace(/^\s+/g, '')
+
+# Trim any whitespace from end of string
+String.prototype.rtrim = () ->
+  String(this).replace(/\s+$/g, '')
+
+
+uid = (() ->
+    id=0
+    () -> "SVGUID_#{id++}_"
+  )()
+  
+
+# Find out the amount of indentation in string
+line_indent = (line) ->
+  match = /^(\s*)/m.exec line
+  match?[1].length
+
+# Remove any ascii-encoding and replace with real characters.
+line_wash = (line) ->
+  r = /_x(\w\w)_/
+  while r.test line
+    m = r.exec line
+    line = line.replace(m[0], String.fromCharCode(parseInt(m[1], 16)))
+  line
+
+# Convert given file into Jade and perform callback with the jade
+# file name as argument.
+html2jade = (file, callback) ->
+  p = spawn('html2jade', [file])
+  
+  p.stdout.on 'data', (data) -> l.h "stdout: #{data}"      
+  p.stderr.on 'data', (data) -> l.h "stderr: #{data}"
+  p.on        'exit', (code) -> callback file.replace ".svg", '.jade'
+  
+# For each svg file in path, convert to jade and perform callback
+# passing the jade file name.
+each_jade_in_path = (path, callback) ->
+  fs.readdir path, (err, files) ->
+    for file in files
+      if /\.svg/.test(file)
+        html2jade "#{path}/#{file}", callback
+
+each_jade_in_files = (files, callback) ->
+  for file in files
+    if /\.svg/.test(file)
+      html2jade file, callback
+
+
+# For each line in file, perform callback with the line.
+# Additional; Filter any lines that is not interesting.
+#             Concatinate any multiline strings into single line.
+# Finaly perform finished whenever all lines is read from file.
+each_line = (file, callback, finished) ->
+  last_line = null
+  stream    = fs.createReadStream(file)
+  saved     = []
+  
+  lazy = Lazy(stream).lines.map(String).filter (line) -> 
+    not (
+      # Filter the not interesting rows in the top of the file
+      /^html$/i.test(line) or 
+      /^\s+body$/i.test(line) or 
+      /^\s+\/\/\s+Generator.*$/i.test(line)
+      )
+
+  lazy.forEach (line) ->
+    # These camel cased params is destroyed by html2jade. We are just
+    # correcting them.
+    line = line.replace('lineargradient', 'linearGradient').
+      replace('gradientunits', 'gradientUnits').
+      replace('gradienttransform', 'gradientTransform')
+    
+    # We only emit those lines that are whole lines, multilines will 
+    # become joined
+    if /^\t/g.test(line)
+      last_line += line.replace(/\t/g, '').replace(/(\r\n|\n|\r)/gm," ")
+    else
+      save = callback(last_line) if last_line
+      saved.push save if save
+      last_line = line.replace(/(\r\n|\n|\r)/gm," ")
+    
+  stream.once 'end', -> finished(saved)
+
+
+# Loop all occurrancies of regex 'rx' in str and spawn f with match.
+replace_each_match_in = (rx, str, f) ->
+  while m = rx.exec str
+    res = f(m)
+    str = str.replace(m[0], res)
+  str
+
+
+# Class that holds the tag information such as;
+#   name of tag
+#   id of element
+#   classes of element
+class Tag
+  # @id
+  # @name
+  # @classes
+  # @tag
+  constructor: (@tag) ->
+    @id         = null
+    @name       = null
+    @classes    = []
+    @tag        = line_wash @tag
+
+    name_match  = /^\s*([^#\(]+)/m.exec(@tag)
+    id_match    = /^.+#([^\.]+)/m.exec(@tag)
+    
+    if name_match
+      @name     = name_match[1]
+    
+    if id_match
+      @id       = id_match[1]
+      classes   = @tag.replace(id_match[0], "")
+    
+    if classes
+      classes   = classes.split('.')
+      classes.shift()
+      @classes  = classes
+  
+
+# Class that holds any arguments passed to tag.
+# Any properties is variadic and depends upon the definition.
+class Args
+  # Variadic properties
+  constructor: (args) ->
+    other = @
+    if parts = args?.split(', ')
+      (() -> 
+        x = part.split('=')
+        x[1] = x[1].replace(/^\'/, '').replace(/\'$/, '').trim()
+        other[x[0]] = x[1]
+      )() for part in parts
+  
+
+# Represents a physical line in the jade file.
+class Line
+  # @parent
+  # @children
+  # @last_child
+  # @indent
+  # @value
+  # @tag
+  # @args
+  # @translation
+  # @invalidated
+  
+  # Takes the file name and the line and constructs the line object.
+  constructor: (@file, line) ->
+    @parent       = null
+    @children     = []
+    @last_child   = null
+    tag_match     = /^\s*([^\(\n]+)/m.exec(line)                              # Match tag
+    args_match    = /\((.*)\)/m.exec(line)                                    # Match arguments
+    @indent       = if tag_match then line_indent(tag_match[0]) else 0        # Get indent
+    value         = line                                                      # Init value with line
+    value         = value.replace(tag_match[0], "") if tag_match and value    # Remove tag from line
+    @value        = value.replace(args_match[0], "") if args_match and value  # Remove args from line, only value left now
+    @value        = @value.trim() if @value
+    @value        = null if @value and @value.length = 0
+    @tag          = new Tag(tag_match?[1])                                    # Get tag
+    @args         = new Args(args_match?[1])                                  # Get args
+    @invalidated  = false
+    @is_workspace = false
+
+  # Output the line as text. Optionally adjust indent and allow html
+  # for beautifull debug formating.
+  #   indent_adjust: If line is originally indented by 4 spaces, you 
+  #                  can pass -2 to make output indent by 2. If you 
+  #                  pass 2 it would indent by 6.
+  # 
+  #   format: Pass false if you want clean jade output. Pass true if
+  #           you are generating html debug output.
+  # 
+  to_s: (indent_adjust = 0, format = false) ->
+    b = '';     be = '';      i = '';     ie = ''
+    if format
+      b = '<b>';  be = '</b>';  i = '<i>';  ie = '</i>'
+    
+    oindent       = ' '.repeat(@indent + indent_adjust)
+    
+    otag_name     = if @tag.name                then @tag.name                    else ""
+    otag_id       = if @tag.id                  then "##{@tag.id}"                else ""
+    otag_classes  = if @tag.classes.length > 0  then ".#{@tag.classes.join('.')}" else ""
+    ovalue        = if @value                   then @value                       else ""
+    oargs         = for name, value of @args
+      "#{name}='#{b}#{value}#{be}'"
+    var_name      = ""
+    
+    if @tag.id
+      if /\$\(([^\)]+)\)/.test @tag.id
+        var_name = replace_each_match_in /\$\(([^\)]+)\)/, @tag.id, (m) ->
+          "_dollar__lp_#{m[1]}_rp_"
+        
+        var_name = var_name.replace /-/g, "_"
+        
+        oargs.unshift "id=#{b}#{var_name}#{be}"
+      else
+        oargs.unshift "id='#{b}#{@tag.id}#{be}'" 
+      
+    oargs         = "#{b}(#{be}#{oargs.join(', ')}#{b})#{be}" if oargs.length > 0
+    ovar_decl     = if var_name != ""
+                      var_value = replace_each_match_in /\$\(([^\)]+)\)/, "\"#{@tag.id}\"", (m) ->
+                        "\"+#{m[1]}+\""
+                      var_value = var_value.replace /\+""$/, ''
+                      "#{oindent}- var #{var_name} = #{var_value}\n"
+                    else
+                      ""
+    "#{ovar_decl}#{oindent}#{i}#{otag_name}#{ie}#{otag_classes}#{oargs} #{ovalue}".rtrim()
+  
+  # Push a child object. If the child belongs further down the hierarchy
+  # it will inturn push it to the correct child. It is important that
+  # lines is pushed in the order they arrive in the original file.
+  push: (child) ->
+    # Row is not valid for my node if it has lower indent then me
+    return false if child.indent <= @indent
+    # Try to append row to one of my children.
+    return true if @last_child and @last_child.push(child)
+    # If that fails, it belongs to me
+    @children.push @last_child = child
+    child.parent = @
+    true
+  
+  # Set translation
+  my_translation: () ->
+    @translation or @parent.my_translation()
+  
+
+  # Returns true if this is a workspace element
+  is_workspace: () ->
+    @is_workspace
+  
+
+  # Set the workspace coordinates and turns this element into a workspace.
+  set_workspace: (x, y, width, height) ->
+    @args.transform = "translate(#{x},#{y})"
+    @args.width     = width
+    @args.height    = height
+    @translation    = x:x, y:y
+    @is_workspace   = true
+  
+
+  # Set parent group translation.
+  set_translate: (x, y) ->
+    ws = @my_translation()
+    x -= ws.x
+    y -= ws.y
+    @translation = x:x, y:y
+    @args.transform = "translate(#{x},#{y})"
+  
+
+  # Invalidate this element. If element is invalidatet it should not show
+  # in output.
+  invalidate: () ->
+    @invalidated = true
+  
+
+  # Iterate through all children and their children.
+  each_child_deep: (f) ->
+    ((c) -> 
+      f(c)
+      child.each_child_deep(f)
+    )(child) for child in @children
+  
+
+  # Construct a name by concatinate all parents names with self name.
+  name_deep: () ->
+    "svg-" + if @tag.parent
+        "#{@tag.parent.name_deep()}-#{@tag.id}"
+      else 
+        "#{@tag.id}"
+  
+
+  # Read all lines in path and execute f for each line. Once a file is done
+  # execute finished.
+  @lines_in_path: (path, f, finished) ->
+    each_jade path, (file) ->
+      each_line file
+        , (text_line) -> 
+          f new Line(file, text_line)
+        , finished
+  
+  # Organize rows into hierarchy
+  @nodes_in_path: (path, f, finished) ->
+    result = {}
+    Line.lines_in_path path, (line) ->
+        result[line.file] or= new Line("root#svg")
+        result[line.file].push line
+        f(line)
+      , finished
+  
+  @lines_in_files: (files, f, finished) ->
+    each_jade_in_files files, (file) ->
+      each_line file
+        , (text_line) -> 
+          f new Line(file, text_line)
+        , finished
+
+  @nodes_in_files: (files, f, finished) ->
+    result = {}
+    Line.lines_in_files files, (line) ->
+        result[line.file] or= new Line("root#svg")
+        result[line.file].push line
+        f(line)
+      , finished
+
+# Map old gradient ID with new unique ID.
+unique_mapper = {}
+
+# Loop all lines in folder 'path'
+Line.nodes_in_files files
+  , (line) ->
+    
+    gradient_rex  = /lineargradient/i
+    url_rex       = /url\(#([^\)]+)\)/i
+    workspace_rex = /workspace/i
+    translate_rex = /translate/i
+    
+    # Generate new unique id for gradient so that they don't take out eachother.
+    if gradient_rex.test line.tag.name
+      unique                      = uid()
+      unique_mapper[line.tag.id]  = unique
+      line.tag.id                 = unique
+    
+    # Update fill params that points to gradient id
+    if url_rex.test line.args.fill
+      id = unique_mapper[url_rex.exec(line.args.fill)[1]]
+      line.args.fill = "url(##{id})"
+      
+    # If line tag id contains 'workspace', we know it's a displacement element
+    # and we know that the parent is a root element. Root elements shall be
+    # pushed into workspaces array.
+    if workspace_rex.test line.tag.id
+      line.args.x or= 0
+      line.args.y or= 0
+      
+      line.parent.set_workspace(0-parseFloat(line.args.x), 0-parseFloat(line.args.y), line.args.width, line.args.height)
+      line.invalidate()
+            
+      line.parent
+    # If line tag id contains 'translate', we know that we should realign
+    # parent element with the amount defined in the translation element.
+    else 
+      if translate_rex.test line.tag.id
+        line.args.x or= 0
+        line.args.y or= 0
+      
+        line.parent.set_translate(0-parseFloat(line.args.x), 0-parseFloat(line.args.y))
+        line.invalidate()
+      
+      # If line has a value, we know that it is free text. Any free text might
+      # contain variables. If so, we need to extract variables and split lines
+      # around variables.
+      else if line.value and /{{([^}]+)}}/.test(line.value)
+        val         = line.value
+        line.value  = ""
+        ind         = ' '.repeat(line.indent + INDENT)
+        while match = /{{([^}]+)}}/.exec(val)
+          split = val.split(match[0])
+          
+          # Add the neccesery lines
+          line.children.push(new Line(line.file, "#{ind}| #{split[0].trim()}")) if split[0]
+          line.children.push(new Line(line.file, "#{ind}= #{match[1].trim()}"))
+          val = split[1]
+      null
+  , (workspaces) -> 
+    # All lines in a given file is fully read, now we can write any workspaces
+    # available
+    ((ws) ->
+      console.log "Writing workspace '#{ws.name_deep()}.jade'"
+      stream = fs.createWriteStream("#{out_path}/#{ws.name_deep()}.jade")
+      stream.once 'open', (fd) ->
+        indent_adjust = ws.indent
+        stream.write "#{ws.to_s(0-indent_adjust, false)}\n"
+        ws.each_child_deep (line) ->
+          stream.write "#{line.to_s(0-indent_adjust, false)}\n" if not line.invalidated
+          
+    )(workspace) for workspace in workspaces

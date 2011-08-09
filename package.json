@@ -1,0 +1,10 @@
+{
+    "name": "svg2jadepartial",
+    "version": "0.0.1",
+    "private": false,
+    "dependencies": {
+        "jade"          :">= 0.11.0",
+        "coffee-script" :">= 1.1.1",
+        "lazy"          :">= 1.0.6"
+    }
+}
