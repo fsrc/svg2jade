@@ -1,6 +1,25 @@
 {
     "name": "svg2jadepartial",
     "version": "0.0.1",
+    "description": "Utility written in CoffeeScript for using SVG with Jade template engine",
+    "keywords": "jade svg express",
+    "homepage": "https://github.com/fixerfrasse/svg2jade",
+    "author": {
+      "name": "Fredrik Andersson",
+      "email": "fredrik@kondensator.se"
+    },
+    "files":[
+      "readme.markdown",
+      "svg2jadepartial"
+    ],
+    "bin":{
+      "svg2jadepartial":"./svg2jadepartial"
+    },
+    "repository": {
+      "type":"git",
+      "url":"git://github.com/fixerfrasse/svg2jade.git"
+    },
+    "prefereGlobal":true,
     "private": false,
     "dependencies": {
         "jade"          :">= 0.11.0",

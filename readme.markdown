@@ -2,6 +2,14 @@ SVG to Jade partial
 ===================
 Lately I have been working on a SVG intensive Node.js project. So I created a Node.js script that takes a SVG-file straight from Illustrator and converts that to a usable partial for including in other Jade-files.
 
+Installation
+============
+npm install -g svg2jadepartial
+
+Usage
+=====
+svg2jadepartial <any_svg_file.svg>
+
 Features
 ========
  * Variables
