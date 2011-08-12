@@ -1,20 +1,51 @@
 #!/usr/bin/env coffee
 
-fs        = require 'fs'
-spawn     = require('child_process').spawn
-# path      = fs.realpathSync 'svg'
-# out_path  = fs.realpathSync 'views/svg'
-out_path  = fs.realpathSync './'
-Lazy      = require("lazy")  
-INDENT    = 2
+cmd_path      = process.argv[1].replace(/\/svg2jadepartial/, "")
+modules_path  = "#{cmd_path}/node_modules"
 
-files = []
-process.argv.forEach (val, index, array) ->
-  files.push val if index > 1
+require.paths.push modules_path
 
-if files.length == 0
-  console.log "No files given as input."
+fs            = require 'fs'
+spawn         = require('child_process').spawn
+args          = require("argsparser").parse()
+Lazy          = require("lazy")  
+INDENT        = 2
+
+print_help_and_exit = () ->
+  console.log ""
+  console.log "svg2jadepartial [-i] <infile[s]> -o <outpath>"
+  console.log "  [-i]  One or more svg files or directories with svg files for input."
+  console.log "  [-o]  Out path. Default is current directory."
+  console.log ""
+  console.log "NOTES:"
+  console.log "  Outputted file[s] is dependent upon the amount of workspaces within each file."
+  console.log ""
   process.exit(1)
+  
+print_help_and_exit() if args['-h']
+  
+infiles = args['-i'] if args['-i']
+infiles = args['coffee'].slice(1) if not infiles
+outpath = args['-o']
+outpath = if outpath then fs.realpathSync(outpath) else fs.realpathSync('./')
+
+print_help_and_exit if not infiles
+
+infiles.forEach (file) ->
+  file = fs.realpathSync("#{file}")
+  console.log file
+  stats = fs.stat file, (err, stats) ->
+    if stats.isDirectory()
+      fs.readdir file, (err, files) ->
+        files.forEach (entry) ->
+          if /\.svg$/.test entry
+            console.log "Reading file #{entry}"
+            loop_files ["#{file}/#{entry}"], outpath
+            
+    else if stats.isFile()
+      console.log "Reading file #{file}"
+      loop_files [file], outpath
+
 
 # Repeat any string count times, great for generating empty strings.
 # For example indentation spaces.
@@ -105,7 +136,7 @@ each_line = (file, callback, finished) ->
       /^\s+body$/i.test(line) or 
       /^\s+\/\/\s+Generator.*$/i.test(line)
       )
-
+  
   lazy.forEach (line) ->
     # These camel cased params is destroyed by html2jade. We are just
     # correcting them.
@@ -122,8 +153,9 @@ each_line = (file, callback, finished) ->
       saved.push save if save
       last_line = line.replace(/(\r\n|\n|\r)/gm," ")
     
-  stream.once 'end', -> finished(saved)
-
+  stream.once 'end', -> 
+    finished(saved)
+  
 
 # Loop all occurrancies of regex 'rx' in str and spawn f with match.
 replace_each_match_in = (rx, str, f) ->
@@ -207,7 +239,7 @@ class Line
     @args         = new Args(args_match?[1])                                  # Get args
     @invalidated  = false
     @is_workspace = false
-
+  
   # Output the line as text. Optionally adjust indent and allow html
   # for beautifull debug formating.
   #   indent_adjust: If line is originally indented by 4 spaces, you 
@@ -323,7 +355,13 @@ class Line
       each_line file
         , (text_line) -> 
           f new Line(file, text_line)
-        , finished
+        , (saved) -> 
+          finished(saved)
+          fs.unlink file, (err)->
+            if err
+              console.log "Temporary file #{file} removed"
+            else
+              console.log "Error #{err} when removing file #{file}"
   
   # Organize rows into hierarchy
   @nodes_in_path: (path, f, finished) ->
@@ -340,7 +378,7 @@ class Line
         , (text_line) -> 
           f new Line(file, text_line)
         , finished
-
+  
   @nodes_in_files: (files, f, finished) ->
     result = {}
     Line.lines_in_files files, (line) ->
@@ -348,76 +386,79 @@ class Line
         result[line.file].push line
         f(line)
       , finished
+  
+
 
 # Map old gradient ID with new unique ID.
 unique_mapper = {}
 
-# Loop all lines in folder 'path'
-Line.nodes_in_files files
-  , (line) ->
+loop_files = (files, out_dir) ->
+  # Loop all lines in folder 'path'
+  Line.nodes_in_files files
+    , (line) ->
     
-    gradient_rex  = /lineargradient/i
-    url_rex       = /url\(#([^\)]+)\)/i
-    workspace_rex = /workspace/i
-    translate_rex = /translate/i
+      gradient_rex  = /lineargradient/i
+      url_rex       = /url\(#([^\)]+)\)/i
+      workspace_rex = /workspace/i
+      translate_rex = /translate/i
     
-    # Generate new unique id for gradient so that they don't take out eachother.
-    if gradient_rex.test line.tag.name
-      unique                      = uid()
-      unique_mapper[line.tag.id]  = unique
-      line.tag.id                 = unique
+      # Generate new unique id for gradient so that they don't take out eachother.
+      if gradient_rex.test line.tag.name
+        unique                      = uid()
+        unique_mapper[line.tag.id]  = unique
+        line.tag.id                 = unique
     
-    # Update fill params that points to gradient id
-    if url_rex.test line.args.fill
-      id = unique_mapper[url_rex.exec(line.args.fill)[1]]
-      line.args.fill = "url(##{id})"
+      # Update fill params that points to gradient id
+      if url_rex.test line.args.fill
+        id = unique_mapper[url_rex.exec(line.args.fill)[1]]
+        line.args.fill = "url(##{id})"
       
-    # If line tag id contains 'workspace', we know it's a displacement element
-    # and we know that the parent is a root element. Root elements shall be
-    # pushed into workspaces array.
-    if workspace_rex.test line.tag.id
-      line.args.x or= 0
-      line.args.y or= 0
-      
-      line.parent.set_workspace(0-parseFloat(line.args.x), 0-parseFloat(line.args.y), line.args.width, line.args.height)
-      line.invalidate()
-            
-      line.parent
-    # If line tag id contains 'translate', we know that we should realign
-    # parent element with the amount defined in the translation element.
-    else 
-      if translate_rex.test line.tag.id
+      # If line tag id contains 'workspace', we know it's a displacement element
+      # and we know that the parent is a root element. Root elements shall be
+      # pushed into workspaces array.
+      if workspace_rex.test line.tag.id
         line.args.x or= 0
         line.args.y or= 0
       
-        line.parent.set_translate(0-parseFloat(line.args.x), 0-parseFloat(line.args.y))
+        line.parent.set_workspace(0-parseFloat(line.args.x), 0-parseFloat(line.args.y), line.args.width, line.args.height)
         line.invalidate()
+            
+        line.parent
+      # If line tag id contains 'translate', we know that we should realign
+      # parent element with the amount defined in the translation element.
+      else 
+        if translate_rex.test line.tag.id
+          line.args.x or= 0
+          line.args.y or= 0
       
-      # If line has a value, we know that it is free text. Any free text might
-      # contain variables. If so, we need to extract variables and split lines
-      # around variables.
-      else if line.value and /{{([^}]+)}}/.test(line.value)
-        val         = line.value
-        line.value  = ""
-        ind         = ' '.repeat(line.indent + INDENT)
-        while match = /{{([^}]+)}}/.exec(val)
-          split = val.split(match[0])
+          line.parent.set_translate(0-parseFloat(line.args.x), 0-parseFloat(line.args.y))
+          line.invalidate()
+      
+        # If line has a value, we know that it is free text. Any free text might
+        # contain variables. If so, we need to extract variables and split lines
+        # around variables.
+        else if line.value and /{{([^}]+)}}/.test(line.value)
+          val         = line.value
+          line.value  = ""
+          ind         = ' '.repeat(line.indent + INDENT)
+          while match = /{{([^}]+)}}/.exec(val)
+            split = val.split(match[0])
           
-          # Add the neccesery lines
-          line.children.push(new Line(line.file, "#{ind}| #{split[0].trim()}")) if split[0]
-          line.children.push(new Line(line.file, "#{ind}= #{match[1].trim()}"))
-          val = split[1]
-      null
-  , (workspaces) -> 
-    # All lines in a given file is fully read, now we can write any workspaces
-    # available
-    ((ws) ->
-      console.log "Writing workspace '#{ws.name_deep()}.jade'"
-      stream = fs.createWriteStream("#{out_path}/#{ws.name_deep()}.jade")
-      stream.once 'open', (fd) ->
-        indent_adjust = ws.indent
-        stream.write "#{ws.to_s(0-indent_adjust, false)}\n"
-        ws.each_child_deep (line) ->
-          stream.write "#{line.to_s(0-indent_adjust, false)}\n" if not line.invalidated
+            # Add the neccesery lines
+            line.children.push(new Line(line.file, "#{ind}| #{split[0].trim()}")) if split[0]
+            line.children.push(new Line(line.file, "#{ind}= #{match[1].trim()}"))
+            val = split[1]
+        null
+    , (workspaces) -> 
+      # All lines in a given file is fully read, now we can write any workspaces
+      # available
+      ((ws) ->
+        console.log "Writing workspace '#{ws.name_deep()}.jade'"
+        stream = fs.createWriteStream("#{out_dir}/#{ws.name_deep()}.jade")
+        stream.once 'open', (fd) ->
+          indent_adjust = ws.indent
+          stream.write "#{ws.to_s(0-indent_adjust, false)}\n"
+          ws.each_child_deep (line) ->
+            stream.write "#{line.to_s(0-indent_adjust, false)}\n" if not line.invalidated
           
-    )(workspace) for workspace in workspaces
+      )(workspace) for workspace in workspaces
