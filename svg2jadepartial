@@ -66,18 +66,40 @@ String.prototype.repeat = (count) ->
   return result
 
 # Trim any whitespace from beginning and end of string.
-String.prototype.trim = () ->
-  String(this).replace(/^\s+|\s+$/g, '')
+String.prototype.trim = (value) ->
+  value ?= "\\s"
+  String(this).replace(new RegExp("^[#{value}]+|[#{value}]+$", 'g'), '')
 
 # Trim any whitespace from begining of string.
-String.prototype.ltrim = () ->
-  String(this).replace(/^\s+/g, '')
+String.prototype.ltrim = (value) ->
+  value ?= "\\s"
+  String(this).replace(new RegExp("^[#{value}]+", 'g'), '')
 
 # Trim any whitespace from end of string
 String.prototype.rtrim = () ->
-  String(this).replace(/\s+$/g, '')
+  value ?= "\\s"
+  String(this).replace(new RegExp("[#{value}]+$", 'g'), '')
 
+Array.prototype.contains = (obj) ->
+  i = this.length;
+  while i--
+    if this[i] == obj
+      return true;
+  false;
 
+Array.prototype.best_of = (values) ->
+  result = (i for i in this when values.contains(i))
+  result = if not result or result.length == 0 then this else result
+  result[0]
+
+Array.prototype.remove = (s) ->
+  index = this.indexOf(s)
+  if index != -1
+    this.splice(index, 1)
+  
+Array.prototype.remove_all = (s) ->
+  @.splice(i, 1) for itm in s when i = @.indexOf(itm) != -1
+  
 uid = (() ->
     id=0
     () -> "SVGUID_#{id++}_"
@@ -144,6 +166,7 @@ each_line = (file, callback, finished) ->
       replace('gradientunits', 'gradientUnits').
       replace('gradienttransform', 'gradientTransform')
     
+    
     # We only emit those lines that are whole lines, multilines will 
     # become joined
     if /^\t/g.test(line)
@@ -154,6 +177,8 @@ each_line = (file, callback, finished) ->
       last_line = line.replace(/(\r\n|\n|\r)/gm," ")
     
   stream.once 'end', -> 
+    save = callback(last_line) if last_line
+    saved.push save if save
     finished(saved)
   
 
@@ -177,18 +202,26 @@ class Tag
   constructor: (@tag) ->
     @id         = null
     @name       = null
+    @assignment = null
     @classes    = []
     @tag        = line_wash @tag
 
     name_match  = /^\s*([^#\(]+)/m.exec(@tag)
     id_match    = /^.+#([^\.]+)/m.exec(@tag)
+    classes     = @tag
     
     if name_match
       @name     = name_match[1]
+      classes   = classes.replace(name_match[0], "") if classes
     
     if id_match
       @id       = id_match[1]
-      classes   = @tag.replace(id_match[0], "")
+      classes   = @tag.replace(id_match[0], "") if classes
+    
+    if /\=/.test and classes
+      assign_tmp  = classes.split('=')
+      classes     = assign_tmp[0]
+      @assignment = assign_tmp[1].ltrim('_') if assign_tmp[1]
     
     if classes
       classes   = classes.split('.')
@@ -222,11 +255,7 @@ class Line
   # @translation
   # @invalidated
   
-  # Takes the file name and the line and constructs the line object.
-  constructor: (@file, line) ->
-    @parent       = null
-    @children     = []
-    @last_child   = null
+  reconstruct: (line) ->
     tag_match     = /^\s*([^\(\n]+)/m.exec(line)                              # Match tag
     args_match    = /\((.*)\)/m.exec(line)                                    # Match arguments
     @indent       = if tag_match then line_indent(tag_match[0]) else 0        # Get indent
@@ -237,8 +266,20 @@ class Line
     @value        = null if @value and @value.length = 0
     @tag          = new Tag(tag_match?[1])                                    # Get tag
     @args         = new Args(args_match?[1])                                  # Get args
+  
+  # Takes the file name and the line and constructs the line object.
+  constructor: (@file, line) ->
+    @parent       = null
+    @children     = []
+    @last_child   = null
     @invalidated  = false
     @is_workspace = false
+    @reconstruct(line)
+  
+  level: () ->
+    return 0 if not @parent or not @parent.tag.tag
+    # console.log @parent
+    1 + @parent.level()
   
   # Output the line as text. Optionally adjust indent and allow html
   # for beautifull debug formating.
@@ -254,7 +295,8 @@ class Line
     if format
       b = '<b>';  be = '</b>';  i = '<i>';  ie = '</i>'
     
-    oindent       = ' '.repeat(@indent + indent_adjust)
+    # Strange, -1 would be understandable, but -2, i dont know if thats right
+    oindent       = ' '.repeat((@level()-2)*INDENT)
     
     otag_name     = if @tag.name                then @tag.name                    else ""
     otag_id       = if @tag.id                  then "##{@tag.id}"                else ""
@@ -273,7 +315,7 @@ class Line
         
         oargs.unshift "id=#{b}#{var_name}#{be}"
       else
-        oargs.unshift "id='#{b}#{@tag.id}#{be}'" 
+        oargs.unshift "id='#{b}#{@tag.id}#{be}'"
       
     oargs         = "#{b}(#{be}#{oargs.join(', ')}#{b})#{be}" if oargs.length > 0
     ovar_decl     = if var_name != ""
@@ -401,7 +443,37 @@ loop_files = (files, out_dir) ->
       url_rex       = /url\(#([^\)]+)\)/i
       workspace_rex = /workspace/i
       translate_rex = /translate/i
-    
+      rect_rex      = /rect/i
+
+      new_child = (str) ->
+        new_line = new Line(line.file, str)
+        new_line.parent = line
+        line.push new_line
+            
+      if rect_rex.test line.tag.name
+        if line.tag.assignment != null
+          assignment = line.tag.assignment
+          x       = line.args.x
+          y       = line.args.y
+          width   = line.args.width
+          height  = line.args.height
+          ind     = ' '.repeat(line.indent + INDENT)
+          
+          valign  = ['top',   'middle', 'bottom'].best_of(line.tag.classes)
+          halign  = ['left',  'center', 'right'].best_of(line.tag.classes)
+          
+          line.tag.classes.remove_all [valign, halign]
+          
+          classes = ".#{line.tag.classes.join('.')}" if line.tag.classes.length > 0
+          
+          line.reconstruct("#{ind}foreignObject(x='#{x}', y='#{y}', width='#{width}', height='#{height}')")
+          
+          new_child "#{ind} body(xmlns='http://www.w3.org/1999/xhtml')"
+          new_child "#{ind}  div(style='display:table;height:#{height}px;width:#{width}px;overflow:hidden;')"
+          new_child "#{ind}   div#{classes}(style='display:table-cell;vertical-align:#{valign};align:#{halign};')"
+          new_child "#{ind}    = #{assignment}"
+
+      
       # Generate new unique id for gradient so that they don't take out eachother.
       if gradient_rex.test line.tag.name
         unique                      = uid()
@@ -441,13 +513,16 @@ loop_files = (files, out_dir) ->
           val         = line.value
           line.value  = ""
           ind         = ' '.repeat(line.indent + INDENT)
-          while match = /{{([^}]+)}}/.exec(val)
+          while match = /{{([^\}]+)}}/.exec(val)
             split = val.split(match[0])
-          
+            split[0] = split[0].trim('\\s\\t')
+            split[1] = split[1].trim('\\s\\t')
+
             # Add the neccesery lines
-            line.children.push(new Line(line.file, "#{ind}| #{split[0].trim()}")) if split[0]
-            line.children.push(new Line(line.file, "#{ind}= #{match[1].trim()}"))
+            new_child("#{ind}| #{split[0].trim('\t\s')}") if split[0] and split[0] != ""
+            new_child "#{ind}= #{match[1].trim()}"
             val = split[1]
+            
         null
     , (workspaces) -> 
       # All lines in a given file is fully read, now we can write any workspaces
