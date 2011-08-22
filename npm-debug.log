@@ -1,0 +1,273 @@
+info it worked if it ends with ok
+verbose cli [ 'node', '/usr/local/bin/npm', 'publish' ]
+info using npm@1.0.24
+info using node@v0.5.0-pre
+verbose config file /Users/fredrik/.npmrc
+verbose config file /usr/local/etc/npmrc
+verbose publish [ '.' ]
+verbose cache add [ '.', undefined ]
+verbose parsed url { href: '.', pathname: '.' }
+silly testEngine { name: 'svg2jadepartial',
+silly testEngine   version: '0.0.3',
+silly testEngine   description: 'Utility written in CoffeeScript for using SVG with Jade template engine',
+silly testEngine   keywords: [ 'jade svg express' ],
+silly testEngine   homepage: 'https://github.com/fixerfrasse/svg2jade',
+silly testEngine   author: 
+silly testEngine    { name: 'Fredrik Andersson',
+silly testEngine      email: 'fredrik@kondensator.se' },
+silly testEngine   files: [ 'readme.markdown', 'svg2jadepartial' ],
+silly testEngine   bin: { svg2jadepartial: './svg2jadepartial' },
+silly testEngine   repository: 
+silly testEngine    { type: 'git',
+silly testEngine      url: 'git://github.com/fixerfrasse/svg2jade.git' },
+silly testEngine   prefereGlobal: true,
+silly testEngine   private: false,
+silly testEngine   dependencies: 
+silly testEngine    { jade: '>= 0.11.0',
+silly testEngine      'coffee-script': '>= 1.1.1',
+silly testEngine      lazy: '>= 1.0.6',
+silly testEngine      argsparser: '>= 0.0.6' },
+silly testEngine   _npmJsonOpts: 
+silly testEngine    { file: 'package.json',
+silly testEngine      wscript: false,
+silly testEngine      contributors: false,
+silly testEngine      serverjs: false },
+silly testEngine   _id: 'svg2jadepartial@0.0.3',
+silly testEngine   devDependencies: {},
+silly testEngine   engines: { node: '*' },
+silly testEngine   _engineSupported: true,
+silly testEngine   _npmVersion: '1.0.24',
+silly testEngine   _nodeVersion: 'v0.5.0-pre',
+silly testEngine   _defaultsLoaded: true,
+silly testEngine   path: '/Users/fredrik/Documents/open_source/svg2jade',
+silly testEngine   bundleDependencies: [] }
+verbose caching package.json
+verbose loadDefaults svg2jadepartial@0.0.3
+verbose pack /Users/fredrik/Documents/open_source/svg2jade /var/folders/l4/pnx8z35538gbvv4vcqjbbcnw0000gn/T/npm-1314044981873/1314044981873-0.2710018118377775/tmp.tgz
+verbose mkdir (expected) error ENOENT, No such file or directory '/var/folders/l4/pnx8z35538gbvv4vcqjbbcnw0000gn/T/npm-1314044981873'
+verbose mkdir (expected) error ENOENT, No such file or directory '/var/folders/l4/pnx8z35538gbvv4vcqjbbcnw0000gn/T/npm-1314044981873/1314044981873-0.2710018118377775'
+verbose mkdir done: /var/folders/l4/pnx8z35538gbvv4vcqjbbcnw0000gn/T/npm-1314044981873/1314044981873-0.2710018118377775 755
+verbose mkdir'ed /var/folders/l4/pnx8z35538gbvv4vcqjbbcnw0000gn/T/npm-1314044981873/1314044981873-0.2710018118377775
+verbose tar about to write tar and gzip it.
+silly tar args [ '-cvf',
+silly tar args   '-',
+silly tar args   'svg2jade/.gitignore',
+silly tar args   'svg2jade/package.json',
+silly tar args   'svg2jade/readme.markdown',
+silly tar args   'svg2jade/svg2jadepartial',
+silly tar args   'svg2jade/help/tutorial.svg' ]
+verbose success tar -cvf - <file list elided>
+verbose success gzip "--stdout"
+verbose mkdir (expected) error ENOENT, No such file or directory '/var/folders/l4/pnx8z35538gbvv4vcqjbbcnw0000gn/T/npm-1314044981873/1314044981873-0.2710018118377775/contents'
+verbose mkdir (expected) error ENOENT, No such file or directory '/var/folders/l4/pnx8z35538gbvv4vcqjbbcnw0000gn/T/npm-1314044981873/1314044981873-0.2710018118377775/contents/___package.npm'
+verbose mkdir done: /var/folders/l4/pnx8z35538gbvv4vcqjbbcnw0000gn/T/npm-1314044981873/1314044981873-0.2710018118377775/contents/___package.npm 755
+verbose unpack_ uid, gid [ undefined, undefined ]
+verbose unpackTarget /var/folders/l4/pnx8z35538gbvv4vcqjbbcnw0000gn/T/npm-1314044981873/1314044981873-0.2710018118377775/contents/package
+silly gunzTarPerm modes [ '755', '644' ]
+verbose success gzip "--decompress" "--stdout" "/var/folders/l4/pnx8z35538gbvv4vcqjbbcnw0000gn/T/npm-1314044981873/1314044981873-0.2710018118377775/tmp.tgz"
+verbose success tar "-mvxpf" "-" "-o" "-C" "/var/folders/l4/pnx8z35538gbvv4vcqjbbcnw0000gn/T/npm-1314044981873/1314044981873-0.2710018118377775/contents/___package.npm"
+silly asyncMap in gTP /var/folders/l4/pnx8z35538gbvv4vcqjbbcnw0000gn/T/npm-1314044981873/1314044981873-0.2710018118377775/contents/___package.npm/svg2jade/
+silly asyncMap in gTP /var/folders/l4/pnx8z35538gbvv4vcqjbbcnw0000gn/T/npm-1314044981873/1314044981873-0.2710018118377775/contents/___package.npm/svg2jade/.gitignore
+silly asyncMap in gTP /var/folders/l4/pnx8z35538gbvv4vcqjbbcnw0000gn/T/npm-1314044981873/1314044981873-0.2710018118377775/contents/___package.npm/svg2jade/package.json
+silly asyncMap in gTP /var/folders/l4/pnx8z35538gbvv4vcqjbbcnw0000gn/T/npm-1314044981873/1314044981873-0.2710018118377775/contents/___package.npm/svg2jade/readme.markdown
+silly asyncMap in gTP /var/folders/l4/pnx8z35538gbvv4vcqjbbcnw0000gn/T/npm-1314044981873/1314044981873-0.2710018118377775/contents/___package.npm/svg2jade/svg2jadepartial
+silly asyncMap in gTP /var/folders/l4/pnx8z35538gbvv4vcqjbbcnw0000gn/T/npm-1314044981873/1314044981873-0.2710018118377775/contents/___package.npm/svg2jade/help/
+silly asyncMap in gTP /var/folders/l4/pnx8z35538gbvv4vcqjbbcnw0000gn/T/npm-1314044981873/1314044981873-0.2710018118377775/contents/___package.npm/svg2jade/help/tutorial.svg
+verbose gunzed /var/folders/l4/pnx8z35538gbvv4vcqjbbcnw0000gn/T/npm-1314044981873/1314044981873-0.2710018118377775/contents/___package.npm/svg2jade
+verbose rm'ed /var/folders/l4/pnx8z35538gbvv4vcqjbbcnw0000gn/T/npm-1314044981873/1314044981873-0.2710018118377775/contents/package
+verbose renamed [ '/var/folders/l4/pnx8z35538gbvv4vcqjbbcnw0000gn/T/npm-1314044981873/1314044981873-0.2710018118377775/contents/___package.npm/svg2jade',
+verbose renamed   '/var/folders/l4/pnx8z35538gbvv4vcqjbbcnw0000gn/T/npm-1314044981873/1314044981873-0.2710018118377775/contents/package' ]
+silly testEngine { name: 'svg2jadepartial',
+silly testEngine   version: '0.0.3',
+silly testEngine   description: 'Utility written in CoffeeScript for using SVG with Jade template engine',
+silly testEngine   keywords: [ 'jade svg express' ],
+silly testEngine   homepage: 'https://github.com/fixerfrasse/svg2jade',
+silly testEngine   author: 
+silly testEngine    { name: 'Fredrik Andersson',
+silly testEngine      email: 'fredrik@kondensator.se' },
+silly testEngine   files: [ 'readme.markdown', 'svg2jadepartial' ],
+silly testEngine   bin: { svg2jadepartial: './svg2jadepartial' },
+silly testEngine   repository: 
+silly testEngine    { type: 'git',
+silly testEngine      url: 'git://github.com/fixerfrasse/svg2jade.git' },
+silly testEngine   prefereGlobal: true,
+silly testEngine   private: false,
+silly testEngine   dependencies: 
+silly testEngine    { jade: '>= 0.11.0',
+silly testEngine      'coffee-script': '>= 1.1.1',
+silly testEngine      lazy: '>= 1.0.6',
+silly testEngine      argsparser: '>= 0.0.6' },
+silly testEngine   _npmJsonOpts: 
+silly testEngine    { file: '/var/folders/l4/pnx8z35538gbvv4vcqjbbcnw0000gn/T/npm-1314044981873/1314044981873-0.2710018118377775/contents/package/package.json',
+silly testEngine      wscript: false,
+silly testEngine      contributors: false,
+silly testEngine      serverjs: false },
+silly testEngine   _id: 'svg2jadepartial@0.0.3',
+silly testEngine   devDependencies: {},
+silly testEngine   engines: { node: '*' },
+silly testEngine   _engineSupported: true,
+silly testEngine   _npmVersion: '1.0.24',
+silly testEngine   _nodeVersion: 'v0.5.0-pre',
+silly testEngine   _defaultsLoaded: true,
+silly testEngine   path: '/var/folders/l4/pnx8z35538gbvv4vcqjbbcnw0000gn/T/npm-1314044981873/1314044981873-0.2710018118377775/contents/package' }
+verbose caching /var/folders/l4/pnx8z35538gbvv4vcqjbbcnw0000gn/T/npm-1314044981873/1314044981873-0.2710018118377775/contents/package/package.json
+verbose loadDefaults svg2jadepartial@0.0.3
+verbose tarball contents [ 'package' ]
+verbose from cache /var/folders/l4/pnx8z35538gbvv4vcqjbbcnw0000gn/T/npm-1314044981873/1314044981873-0.2710018118377775/contents/package/package.json
+verbose pack /var/folders/l4/pnx8z35538gbvv4vcqjbbcnw0000gn/T/npm-1314044981873/1314044981873-0.2710018118377775/contents/package /Users/fredrik/.npm/svg2jadepartial/0.0.3/package.tgz
+verbose mkdir'ed /Users/fredrik/.npm/svg2jadepartial/0.0.3
+verbose tar about to write tar and gzip it.
+silly tar args [ '-cvf',
+silly tar args   '-',
+silly tar args   'package/.gitignore',
+silly tar args   'package/package.json',
+silly tar args   'package/readme.markdown',
+silly tar args   'package/svg2jadepartial',
+silly tar args   'package/help/tutorial.svg' ]
+verbose success tar -cvf - <file list elided>
+verbose success gzip "--stdout"
+verbose mkdir (expected) error ENOENT, No such file or directory '/Users/fredrik/.npm/svg2jadepartial/0.0.3/___package.npm'
+verbose mkdir done: /Users/fredrik/.npm/svg2jadepartial/0.0.3/___package.npm 755
+verbose unpack_ uid, gid [ undefined, undefined ]
+verbose unpackTarget /Users/fredrik/.npm/svg2jadepartial/0.0.3/package
+silly gunzTarPerm modes [ '755', '644' ]
+verbose success gzip "--decompress" "--stdout" "/Users/fredrik/.npm/svg2jadepartial/0.0.3/package.tgz"
+verbose success tar "-mvxpf" "-" "-o" "-C" "/Users/fredrik/.npm/svg2jadepartial/0.0.3/___package.npm"
+silly asyncMap in gTP /Users/fredrik/.npm/svg2jadepartial/0.0.3/___package.npm/package/
+silly asyncMap in gTP /Users/fredrik/.npm/svg2jadepartial/0.0.3/___package.npm/package/.gitignore
+silly asyncMap in gTP /Users/fredrik/.npm/svg2jadepartial/0.0.3/___package.npm/package/package.json
+silly asyncMap in gTP /Users/fredrik/.npm/svg2jadepartial/0.0.3/___package.npm/package/readme.markdown
+silly asyncMap in gTP /Users/fredrik/.npm/svg2jadepartial/0.0.3/___package.npm/package/svg2jadepartial
+silly asyncMap in gTP /Users/fredrik/.npm/svg2jadepartial/0.0.3/___package.npm/package/help/
+silly asyncMap in gTP /Users/fredrik/.npm/svg2jadepartial/0.0.3/___package.npm/package/help/tutorial.svg
+verbose gunzed /Users/fredrik/.npm/svg2jadepartial/0.0.3/___package.npm/package
+verbose rm'ed /Users/fredrik/.npm/svg2jadepartial/0.0.3/package
+verbose renamed [ '/Users/fredrik/.npm/svg2jadepartial/0.0.3/___package.npm/package',
+verbose renamed   '/Users/fredrik/.npm/svg2jadepartial/0.0.3/package' ]
+silly testEngine { name: 'svg2jadepartial',
+silly testEngine   version: '0.0.3',
+silly testEngine   description: 'Utility written in CoffeeScript for using SVG with Jade template engine',
+silly testEngine   keywords: [ 'jade svg express' ],
+silly testEngine   homepage: 'https://github.com/fixerfrasse/svg2jade',
+silly testEngine   author: 
+silly testEngine    { name: 'Fredrik Andersson',
+silly testEngine      email: 'fredrik@kondensator.se' },
+silly testEngine   files: [ 'readme.markdown', 'svg2jadepartial' ],
+silly testEngine   bin: { svg2jadepartial: './svg2jadepartial' },
+silly testEngine   repository: 
+silly testEngine    { type: 'git',
+silly testEngine      url: 'git://github.com/fixerfrasse/svg2jade.git' },
+silly testEngine   prefereGlobal: true,
+silly testEngine   private: false,
+silly testEngine   dependencies: 
+silly testEngine    { jade: '>= 0.11.0',
+silly testEngine      'coffee-script': '>= 1.1.1',
+silly testEngine      lazy: '>= 1.0.6',
+silly testEngine      argsparser: '>= 0.0.6' },
+silly testEngine   _npmJsonOpts: 
+silly testEngine    { file: '/Users/fredrik/.npm/svg2jadepartial/0.0.3/package/package.json',
+silly testEngine      wscript: false,
+silly testEngine      contributors: false,
+silly testEngine      serverjs: false },
+silly testEngine   _id: 'svg2jadepartial@0.0.3',
+silly testEngine   devDependencies: {},
+silly testEngine   engines: { node: '*' },
+silly testEngine   _engineSupported: true,
+silly testEngine   _npmVersion: '1.0.24',
+silly testEngine   _nodeVersion: 'v0.5.0-pre',
+silly testEngine   _defaultsLoaded: true,
+silly testEngine   dist: 
+silly testEngine    { shasum: '3f64a0c0808130f0ceba9702ec2d9b5be5ec6544',
+silly testEngine      tarball: 'http://registry.npmjs.org/svg2jadepartial/-/svg2jadepartial-0.0.3.tgz' },
+silly testEngine   scripts: {} }
+verbose caching /Users/fredrik/.npm/svg2jadepartial/0.0.3/package/package.json
+verbose loadDefaults svg2jadepartial@0.0.3
+silly updated sha bytes 9492
+info shasum 3f64a0c0808130f0ceba9702ec2d9b5be5ec6544
+info shasum /Users/fredrik/.npm/svg2jadepartial/0.0.3/package.tgz
+verbose from cache /Users/fredrik/.npm/svg2jadepartial/0.0.3/package/package.json
+verbose chmod /Users/fredrik/.npm/svg2jadepartial/0.0.3/package.tgz 644
+silly publish { name: 'svg2jadepartial',
+silly publish   version: '0.0.3',
+silly publish   description: 'Utility written in CoffeeScript for using SVG with Jade template engine',
+silly publish   keywords: [ 'jade svg express' ],
+silly publish   homepage: 'https://github.com/fixerfrasse/svg2jade',
+silly publish   author: 
+silly publish    { name: 'Fredrik Andersson',
+silly publish      email: 'fredrik@kondensator.se' },
+silly publish   files: [ 'readme.markdown', 'svg2jadepartial' ],
+silly publish   bin: { svg2jadepartial: './svg2jadepartial' },
+silly publish   repository: 
+silly publish    { type: 'git',
+silly publish      url: 'git://github.com/fixerfrasse/svg2jade.git' },
+silly publish   prefereGlobal: true,
+silly publish   private: false,
+silly publish   dependencies: 
+silly publish    { jade: '>= 0.11.0',
+silly publish      'coffee-script': '>= 1.1.1',
+silly publish      lazy: '>= 1.0.6',
+silly publish      argsparser: '>= 0.0.6' },
+silly publish   _npmJsonOpts: 
+silly publish    { file: '/Users/fredrik/.npm/svg2jadepartial/0.0.3/package/package.json',
+silly publish      wscript: false,
+silly publish      contributors: false,
+silly publish      serverjs: false },
+silly publish   _id: 'svg2jadepartial@0.0.3',
+silly publish   devDependencies: {},
+silly publish   engines: { node: '*' },
+silly publish   _engineSupported: true,
+silly publish   _npmVersion: '1.0.24',
+silly publish   _nodeVersion: 'v0.5.0-pre',
+silly publish   _defaultsLoaded: true,
+silly publish   dist: 
+silly publish    { shasum: '3f64a0c0808130f0ceba9702ec2d9b5be5ec6544',
+silly publish      tarball: 'http://registry.npmjs.org/svg2jadepartial/-/svg2jadepartial-0.0.3.tgz' },
+silly publish   scripts: {} }
+info prepublish svg2jadepartial@0.0.3
+verbose PUT svg2jadepartial
+verbose raw, before any munging svg2jadepartial
+verbose url resolving [ 'https://registry.npmjs.org/', './svg2jadepartial' ]
+verbose url resolved https://registry.npmjs.org/svg2jadepartial
+verbose url parsed { href: 'https://registry.npmjs.org/svg2jadepartial',
+verbose url parsed   protocol: 'https:',
+verbose url parsed   slashes: true,
+verbose url parsed   host: 'registry.npmjs.org',
+verbose url parsed   hostname: 'registry.npmjs.org',
+verbose url parsed   pathname: '/svg2jadepartial' }
+silly writing json { _id: 'svg2jadepartial',
+silly writing json   name: 'svg2jadepartial',
+silly writing json   description: 'Utility written in CoffeeScript for using SVG with Jade template engine',
+silly writing json   'dist-tags': {},
+silly writing json   versions: {},
+silly writing json   maintainers: 
+silly writing json    [ { name: 'fixerfrasse',
+silly writing json        email: 'fredrik@kondensator.se' } ] }
+verbose response https://registry.npmjs.org/svg2jadepartial
+silly chunk {"error":"conflict","reason":"Document update conflict."}
+silly chunk 
+verbose GET svg2jadepartial
+verbose raw, before any munging svg2jadepartial
+verbose url resolving [ 'https://registry.npmjs.org/', './svg2jadepartial' ]
+verbose url resolved https://registry.npmjs.org/svg2jadepartial
+verbose url parsed { href: 'https://registry.npmjs.org/svg2jadepartial',
+verbose url parsed   protocol: 'https:',
+verbose url parsed   slashes: true,
+verbose url parsed   host: 'registry.npmjs.org',
+verbose url parsed   hostname: 'registry.npmjs.org',
+verbose url parsed   pathname: '/svg2jadepartial' }
+verbose response https://registry.npmjs.org/svg2jadepartial
+silly chunk {"_id":"svg2jadepartial","_rev":"7-68a8389803e4fdc3c2e4c933729b4dca","name":"svg2jadepartial","description":"Utility written in CoffeeScript for using SVG with Jade template engine","dist-tags":{"latest":"0.0.3"},"versions":{"0.0.1":{"name":"svg2jadepartial","version":"0.0.1","description":"Utility written in CoffeeScript for using SVG with Jade template engine","keywords":["jade svg express"],"homepage":"https://github.com/fixerfrasse/svg2jade","author":{"name":"Fredrik Andersson","email":"fredrik@kondensator.se"},"files":["readme.markdown","svg2jadepartial"],"bin":{"svg2jadepartial":"./svg2jadepartial"},"repository":{"type":"git","url":"git://github.com/fixerfrasse/svg2jade.git"},"prefereGlobal":true,"private":false,"dependencies":{"jade":">= 0.11.0","coffee-script":">= 1.1.1","lazy":">= 1.0.6"},"devDependencies":{},"_id":"svg2jadepartial@0.0.1","engines":{"node":"*"},"_engineSupported":true,"_npmVersion":"1.0.6","_nodeVersion":"v0.5.0-pre","_defaultsLoaded":true,"dist":{"shasum":"a5b8007e5b6a275c1af0b46fcb66659d8a3f575b","tarball":"http://registry.npmjs.org/svg2jadepartial/-/svg2jadepartial-0.0.1.tgz"},"scripts":{},"maintainers":[{"name":"fixerfrasse","email":"fredrik@kondensator.se"}],"directories":{}},"0.0.2":{"name":"svg2jadepartial
+silly chunk ","version":"0.0.2","description":"Utility written in CoffeeScript for using SVG with Jade template engine","keywords":["jade svg express"],"homepage":"https://github.com/fixerfrasse/svg2jade","author":{"name":"Fredrik Andersson","email":"fredrik@kondensator.se"},"files":["readme.markdown","svg2jadepartial"],"bin":{"svg2jadepartial":"./svg2jadepartial"},"repository":{"type":"git","url":"git://github.com/fixerfrasse/svg2jade.git"},"prefereGlobal":true,"private":false,"dependencies":{"jade":">= 0.11.0","coffee-script":">= 1.1.1","lazy":">= 1.0.6","argsparser":">= 0.0.6"},"_npmJsonOpts":{"file":"/Users/fredrik/.npm/svg2jadepartial/0.0.2/package/package.json","wscript":false,"contributors":false,"serverjs":false},"_id":"svg2jadepartial@0.0.2","devDependencies":{},"engines":{"node":"*"},"_engineSupported":true,"_npmVersion":"1.0.24","_nodeVersion":"v0.5.0-pre","_defaultsLoaded":true,"dist":{"shasum":"28bcbc22f3da728018807c3b6a86acc8ee3b8180","tarball":"http://registry.npmjs.org/svg2jadepartial/-/svg2jadepartial-0.0.2.tgz"},"scripts":{},"maintainers":[{"name":"fixerfrasse","email":"fredrik@kondensator.se"}],"directories":{}},"0.0.3":{"name":"svg2jadepartial","version":"0.0.3","description":"Utility written in CoffeeScript for using SVG with Jade template engine","keywords":["jade svg express"],"homepage":"https://github.com/fixerfrasse/svg2jade","author":{"name":"Fredrik Andersson","email":"fredrik@kondensator.se"},"files":["readme.markdown","svg2jadepartial"],"bin":{"svg2jadepartial":"./svg2jadepartial"},"repository":{"type":"git","url":"git://github.com/fixerfrasse/svg2jade.git"},"prefereGlobal":true,"private":false,"dependencies":{"jade":">= 0.11.0","coffee-script":">= 1.1.1","lazy":">= 1.0.6","argsparser":">= 0.0.6"},"_npmJsonOpts":{"file":"/Users/fredrik/.npm/svg2jadepartial/0.0.3/package/package.json","wscript":false,"contributors":false,"serverjs":false},"_id":"svg2jadepartial@0.0.3","devDependencies":{},"engines":{"node":"*"},"_engineSupported":true,"_npmVersion":"1.0.24","_nodeVersion":"v0.5.0-pre","_defaultsLoaded":true,"dist":{"shasum":"2e21ec674b8ed63c91a8e49cd744b280dbf74589","tarball":"http://registry.npmjs.org/svg2jadepartial/-/svg2jadepartial-0.0.3.tgz"},"scripts":{},"maintainers":[{"name":"fixerfrasse","email":"fredrik@kondensator.se"}],"directories":{}}},"maintainers":[{"name":"fixerfrasse","email":"fredrik@kondensator.se"}],"time":{"0.0.1":"2011-08-10T08:49:30.380Z","0.0.2":"2011-08-15T11:49:30.369Z","0.0.3":"2011-08-22T07:04:06.461Z"},"author":{"name":"Fredrik Andersson","email":"fredrik@kondensator.se"},"repository":{"type":"git","url":"git://github.com/fixerfrasse/svg2jade.git"}}
+info Already published svg2jadepartial@0.0.3
+verbose uploading bin dists []
+ERR! publish fail Cannot publish over existing version.
+ERR! publish fail Bump the 'version' field, set the --force flag, or
+ERR! publish fail     npm unpublish 'svg2jadepartial@0.0.3'
+ERR! publish fail and try again
+ERR! 
+ERR! System Darwin 11.1.0
+ERR! command "node" "/usr/local/bin/npm" "publish"
+ERR! cwd /Users/fredrik/Documents/open_source/svg2jade
+ERR! node -v v0.5.0-pre
+ERR! npm -v 1.0.24
+verbose exit [ 1, true ]

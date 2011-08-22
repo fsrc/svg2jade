@@ -1,6 +1,6 @@
 {
     "name": "svg2jadepartial",
-    "version": "0.0.3",
+    "version": "0.0.4",
     "description": "Utility written in CoffeeScript for using SVG with Jade template engine",
     "keywords": "jade svg express",
     "homepage": "https://github.com/fixerfrasse/svg2jade",
