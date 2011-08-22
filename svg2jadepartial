@@ -97,9 +97,26 @@ Array.prototype.remove = (s) ->
   if index != -1
     this.splice(index, 1)
   
+
 Array.prototype.remove_all = (s) ->
   @.splice(i, 1) for itm in s when i = @.indexOf(itm) != -1
   
+
+Array.prototype.insert_before = (itm, new_itm) ->
+  i = @.indexOf(itm)
+  @.splice(i, 0, new_itm)
+
+Array.prototype.insert_after = (itm, new_itm) ->
+  i = @.indexOf(itm)
+  @.splice(i+1, 0, new_itm)
+
+Array.prototype.previous = (itm) ->
+  @[@.indexOf(itm)-1]
+
+Array.prototype.next = (itm) ->
+  @[@.indexOf(itm)+1]
+
+
 uid = (() ->
     id=0
     () -> "SVGUID_#{id++}_"
@@ -199,6 +216,7 @@ class Tag
   # @name
   # @classes
   # @tag
+  # @assignment
   constructor: (@tag) ->
     @id         = null
     @name       = null
@@ -218,10 +236,15 @@ class Tag
       @id       = id_match[1]
       classes   = @tag.replace(id_match[0], "") if classes
     
-    if /\=/.test and classes
+    if classes and /\!\=/.test(classes)
+      assign_tmp  = classes.split('!=')
+      classes     = assign_tmp[0]
+      @assignment = { identifier: assign_tmp[1].ltrim('_'), instruction: '!=' } if assign_tmp[1]
+      
+    else if classes and /\=/.test(classes)
       assign_tmp  = classes.split('=')
       classes     = assign_tmp[0]
-      @assignment = assign_tmp[1].ltrim('_') if assign_tmp[1]
+      @assignment = { identifier: assign_tmp[1].ltrim('_'), instruction: '=' } if assign_tmp[1]
     
     if classes
       classes   = classes.split('.')
@@ -256,6 +279,7 @@ class Line
   # @invalidated
   
   reconstruct: (line) ->
+    @line         = line
     tag_match     = /^\s*([^\(\n]+)/m.exec(line)                              # Match tag
     args_match    = /\((.*)\)/m.exec(line)                                    # Match arguments
     @indent       = if tag_match then line_indent(tag_match[0]) else 0        # Get indent
@@ -266,20 +290,27 @@ class Line
     @value        = null if @value and @value.length = 0
     @tag          = new Tag(tag_match?[1])                                    # Get tag
     @args         = new Args(args_match?[1])                                  # Get args
-  
+    @use_line     = /^\s+\-/.test line
+    
   # Takes the file name and the line and constructs the line object.
-  constructor: (@file, line) ->
+  constructor: (@file, @line) ->
     @parent       = null
     @children     = []
+    @decorations  = { before:[], after:[] } # Not used right now 
     @last_child   = null
     @invalidated  = false
     @is_workspace = false
-    @reconstruct(line)
+    @reconstruct(@line)
+    
+    
   
+  
+  # Calculate the heirarchy level of the element
   level: () ->
     return 0 if not @parent or not @parent.tag.tag
     # console.log @parent
     1 + @parent.level()
+  
   
   # Output the line as text. Optionally adjust indent and allow html
   # for beautifull debug formating.
@@ -298,34 +329,60 @@ class Line
     # Strange, -1 would be understandable, but -2, i dont know if thats right
     oindent       = ' '.repeat((@level()-2)*INDENT)
     
-    otag_name     = if @tag.name                then @tag.name                    else ""
-    otag_id       = if @tag.id                  then "##{@tag.id}"                else ""
-    otag_classes  = if @tag.classes.length > 0  then ".#{@tag.classes.join('.')}" else ""
-    ovalue        = if @value                   then @value                       else ""
-    oargs         = for name, value of @args
-      "#{name}='#{b}#{value}#{be}'"
-    var_name      = ""
-    
-    if @tag.id
-      if /\$\(([^\)]+)\)/.test @tag.id
-        var_name = replace_each_match_in /\$\(([^\)]+)\)/, @tag.id, (m) ->
-          "_dollar__lp_#{m[1]}_rp_"
-        
-        var_name = var_name.replace /-/g, "_"
-        
-        oargs.unshift "id=#{b}#{var_name}#{be}"
-      else
-        oargs.unshift "id='#{b}#{@tag.id}#{be}'"
+    if @use_line
+      @line.replace(/^\s+/, oindent)
+    else
+      otag_name     = if @tag.name                then @tag.name                    else ""
+      otag_id       = if @tag.id                  then "##{@tag.id}"                else ""
+      otag_classes  = if @tag.classes.length > 0  then ".#{@tag.classes.join('.')}" else ""
+      ovalue        = if @value                   then @value                       else ""
+      oargs         = for name, value of @args when value
+        "#{name}='#{b}#{value}#{be}'"
+      var_name      = ""
+  
+      if @tag.id
+        if /\$\(([^\)]+)\)/.test @tag.id
+          var_name = replace_each_match_in /\$\(([^\)]+)\)/, @tag.id, (m) ->
+            "_dollar__lp_#{m[1]}_rp_"
       
-    oargs         = "#{b}(#{be}#{oargs.join(', ')}#{b})#{be}" if oargs.length > 0
-    ovar_decl     = if var_name != ""
-                      var_value = replace_each_match_in /\$\(([^\)]+)\)/, "\"#{@tag.id}\"", (m) ->
-                        "\"+#{m[1]}+\""
-                      var_value = var_value.replace /\+""$/, ''
-                      "#{oindent}- var #{var_name} = #{var_value}\n"
-                    else
-                      ""
-    "#{ovar_decl}#{oindent}#{i}#{otag_name}#{ie}#{otag_classes}#{oargs} #{ovalue}".rtrim()
+          var_name = var_name.replace /-/g, "_"
+      
+          oargs.unshift "id=#{b}#{var_name}#{be}"
+        else
+          oargs.unshift "id='#{b}#{@tag.id}#{be}'"
+  
+      oargs         = "#{b}(#{be}#{oargs.join(', ')}#{b})#{be}" if oargs.length > 0
+      ovar_decl     = if var_name != ""
+                        var_value = replace_each_match_in /\$\(([^\)]+)\)/, "\"#{@tag.id}\"", (m) ->
+                          "\"+#{m[1]}+\""
+                        var_value = var_value.replace /\+""$/, ''
+                        "#{oindent}- var #{var_name} = #{var_value}\n"
+                      else
+                        ""
+      "#{ovar_decl}#{oindent}#{i}#{otag_name}#{ie}#{otag_classes}#{oargs} #{ovalue}".rtrim()
+  
+  
+  decorate_before:(line) ->
+    @decorations.before.push line
+  decorate_after:(line) ->
+    @decorations.after.push line
+  
+  insert_sibling_before: (child) ->
+    child.parent = @parent
+    @parent.children.insert_before(@, child)
+  
+  insert_sibling_after: (child) ->
+    child.parent = @parent
+    @parent.children.insert_after(@, child)
+  
+  insert_child: (child) ->
+    @children.push child
+  
+  get_previous_sibling: ->
+    @parent.previous @
+  
+  get_next_sibling: ->
+    @parent.next @
   
   # Push a child object. If the child belongs further down the hierarchy
   # it will inturn push it to the correct child. It is important that
@@ -339,7 +396,7 @@ class Line
     @children.push @last_child = child
     child.parent = @
     true
-  
+    
   # Set translation
   my_translation: () ->
     @translation or @parent.my_translation()
@@ -389,30 +446,6 @@ class Line
       else 
         "#{@tag.id}"
   
-
-  # Read all lines in path and execute f for each line. Once a file is done
-  # execute finished.
-  @lines_in_path: (path, f, finished) ->
-    each_jade path, (file) ->
-      each_line file
-        , (text_line) -> 
-          f new Line(file, text_line)
-        , (saved) -> 
-          finished(saved)
-          fs.unlink file, (err)->
-            if err
-              console.log "Temporary file #{file} removed"
-            else
-              console.log "Error #{err} when removing file #{file}"
-  
-  # Organize rows into hierarchy
-  @nodes_in_path: (path, f, finished) ->
-    result = {}
-    Line.lines_in_path path, (line) ->
-        result[line.file] or= new Line("root#svg")
-        result[line.file].push line
-        f(line)
-      , finished
   
   @lines_in_files: (files, f, finished) ->
     each_jade_in_files files, (file) ->
@@ -436,50 +469,91 @@ unique_mapper = {}
 
 loop_files = (files, out_dir) ->
   # Loop all lines in folder 'path'
+  indent_adjust = null
+  
   Line.nodes_in_files files
     , (line) ->
-    
+      result        = null
       gradient_rex  = /lineargradient/i
       url_rex       = /url\(#([^\)]+)\)/i
       workspace_rex = /workspace/i
       translate_rex = /translate/i
       rect_rex      = /rect/i
+      state_rex     = /state\(([^\)]+)/
+      numbered_id_rex = /_\d+_/g
 
+      new_sibling_before = (str) ->
+        new_line = new Line(line.file, str)
+        new_line.parent = line.parent
+        line.insert_sibling_before line, new_line
+        new_line
+      
       new_child = (str) ->
         new_line = new Line(line.file, str)
         new_line.parent = line
         line.push new_line
-            
-      if rect_rex.test line.tag.name
-        if line.tag.assignment != null
-          assignment = line.tag.assignment
-          x       = line.args.x
-          y       = line.args.y
-          width   = line.args.width
-          height  = line.args.height
-          ind     = ' '.repeat(line.indent + INDENT)
+        new_line
+      
+      # Remove any impropper unique id from class names
+      line.tag.classes = (cls.replace(numbered_id_rex, '') for cls in line.tag.classes)
+      
+      # Check to see if we have a state-line
+      if state_rex.test line.tag.id
+        value_name  = state_rex.exec(line.tag.id)[1]
+        var_name    = line.parent.tag.id.replace(/-/g, '_').replace(/[\$\(\)]/g, '') if line.parent.tag.id
+        indent      = ' '.repeat(line.indent)
+        line.reconstruct "#{indent}- if(#{var_name} == '#{value_name}')"
+      
+      # If we have a display argument, convert it to a display style instead
+      if line.args.display
+        if line.args.style
+          line.args.style = "#{line.args.style.rstrip(';')};display:#{line.args.display};"
+        else
+          line.args.style = "display:#{line.args.display};"
           
-          valign  = ['top',   'middle', 'bottom'].best_of(line.tag.classes)
-          halign  = ['left',  'center', 'right'].best_of(line.tag.classes)
-          
-          line.tag.classes.remove_all [valign, halign]
-          
-          classes = ".#{line.tag.classes.join('.')}" if line.tag.classes.length > 0
-          
-          line.reconstruct("#{ind}foreignObject(x='#{x}', y='#{y}', width='#{width}', height='#{height}')")
-          
-          new_child "#{ind} body(xmlns='http://www.w3.org/1999/xhtml')"
-          new_child "#{ind}  div(style='display:table;height:#{height}px;width:#{width}px;overflow:hidden;')"
-          new_child "#{ind}   div#{classes}(style='display:table-cell;vertical-align:#{valign};align:#{halign};')"
-          new_child "#{ind}    = #{assignment}"
-
+        line.args.display = null
       
       # Generate new unique id for gradient so that they don't take out eachother.
       if gradient_rex.test line.tag.name
         unique                      = uid()
         unique_mapper[line.tag.id]  = unique
         line.tag.id                 = unique
+        
+      # Removing unique staples on id is only valid if it's not a gradient
+      else if numbered_id_rex.test line.tag.id
+        line.tag.id = line.tag.id.replace(numbered_id_rex, '')
+      
+      # Generate embeded HTML. Test to see if rect tag.
+      if rect_rex.test line.tag.name
+        # Test to see if we have an assignment in ID
+        if line.tag.assignment != null
+          if numbered_id_rex.test line.tag.assignment.identifier
+            line.tag.assignment.identifier = line.tag.assignment.identifier.replace(numbered_id_rex, '')
+          
+          assignment = line.tag.assignment.identifier
+          instruction = line.tag.assignment.instruction
+          x       = line.args.x
+          y       = line.args.y
+          width   = line.args.width
+          height  = line.args.height
+          ind     = ' '.repeat(line.indent + INDENT)
+
+          valign  = ['top',   'middle', 'bottom'].best_of(line.tag.classes)
+          halign  = ['left',  'center', 'right'].best_of(line.tag.classes)
+          
+          line.tag.classes.remove valign
+          line.tag.classes.remove halign            
+
+          classes = ".#{line.tag.classes.join('.')}" if line.tag.classes.length > 0
+
+          line.reconstruct("#{ind}foreignObject(x='#{x}', y='#{y}', width='#{width}', height='#{height}')")
+
+          new_child "#{ind} body(xmlns='http://www.w3.org/1999/xhtml')"
+          new_child "#{ind}  div(style='display:table;height:#{height}px;width:#{width}px;overflow:hidden;')"
+          new_child "#{ind}   div#{classes}(style='display:table-cell;vertical-align:#{valign};text-align:#{halign};')"
+          new_child "#{ind}    #{instruction} #{assignment}"
     
+      
       # Update fill params that points to gradient id
       if url_rex.test line.args.fill
         id = unique_mapper[url_rex.exec(line.args.fill)[1]]
@@ -495,41 +569,44 @@ loop_files = (files, out_dir) ->
         line.parent.set_workspace(0-parseFloat(line.args.x), 0-parseFloat(line.args.y), line.args.width, line.args.height)
         line.invalidate()
             
-        line.parent
+        # If line is a workspace definition, then we return parent line
+        # so that it can be used as root for a partial.
+        result = line.parent
+        
       # If line tag id contains 'translate', we know that we should realign
       # parent element with the amount defined in the translation element.
-      else 
-        if translate_rex.test line.tag.id
-          line.args.x or= 0
-          line.args.y or= 0
-      
-          line.parent.set_translate(0-parseFloat(line.args.x), 0-parseFloat(line.args.y))
-          line.invalidate()
-      
-        # If line has a value, we know that it is free text. Any free text might
-        # contain variables. If so, we need to extract variables and split lines
-        # around variables.
-        else if line.value and /{{([^}]+)}}/.test(line.value)
-          val         = line.value
-          line.value  = ""
-          ind         = ' '.repeat(line.indent + INDENT)
-          while match = /{{([^\}]+)}}/.exec(val)
-            split = val.split(match[0])
-            split[0] = split[0].trim('\\s\\t')
-            split[1] = split[1].trim('\\s\\t')
+      if translate_rex.test line.tag.id
+        line.args.x or= 0
+        line.args.y or= 0
+    
+        line.parent.set_translate(0-parseFloat(line.args.x), 0-parseFloat(line.args.y))
+        line.invalidate()
+    
+      # If line has a value, we know that it is free text. Any free text might
+      # contain variables. If so, we need to extract variables and split lines
+      # around variables.
+      if line.value and /{{([^}]+)}}/.test(line.value)
+        val         = line.value
+        line.value  = ""
+        ind         = ' '.repeat(line.indent + INDENT)
+        while match = /{{([^\}]+)}}/.exec(val)
+          split = val.split(match[0])
+          split[0] = split[0].trim('\\s\\t')
+          split[1] = split[1].trim('\\s\\t')
 
-            # Add the neccesery lines
-            new_child("#{ind}| #{split[0].trim('\t\s')}") if split[0] and split[0] != ""
-            new_child "#{ind}= #{match[1].trim()}"
-            val = split[1]
-            
-        null
+          # Add the neccesery lines
+          new_child("#{ind}| #{split[0].trim('\t\s')}") if split[0] and split[0] != ""
+          new_child "#{ind}= #{match[1].trim()}"
+          val = split[1]
+          
+      result
     , (workspaces) -> 
       # All lines in a given file is fully read, now we can write any workspaces
       # available
       ((ws) ->
-        console.log "Writing workspace '#{ws.name_deep()}.jade'"
-        stream = fs.createWriteStream("#{out_dir}/#{ws.name_deep()}.jade")
+        deep_name = ws.name_deep().replace(/[\$\(\)]/g, '')
+        console.log "Writing workspace '#{deep_name}.jade'"
+        stream = fs.createWriteStream("#{out_dir}/#{deep_name}.jade")
         stream.once 'open', (fd) ->
           indent_adjust = ws.indent
           stream.write "#{ws.to_s(0-indent_adjust, false)}\n"
